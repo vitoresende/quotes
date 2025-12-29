@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
+  const isAuthenticated = !!user;
   const [currentQuote, setCurrentQuote] = useState<any>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
-  const [quoteHistory, setQuoteHistory] = useState<number[]>([]);
+  const [quoteHistory, setQuoteHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const { data: randomQuote, refetch: refetchQuote } = trpc.quotes.getRandom.useQuery(undefined, {
@@ -109,7 +109,7 @@ export default function Home() {
                 Sign in with your Google account to start collecting and discovering quotes from your favorite books.
               </p>
               <Button
-                onClick={() => (window.location.href = getLoginUrl())}
+                onClick={signInWithGoogle}
                 size="lg"
                 className="w-full"
               >

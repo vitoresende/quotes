@@ -3,13 +3,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Collections from "./pages/Collections";
 import CollectionDetail from "./pages/CollectionDetail";
 import AddQuote from "./pages/AddQuote";
 import KindleSync from "./pages/KindleSync";
-import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "./components/DashboardLayout";
 import { Loader2 } from "lucide-react";
 
@@ -42,7 +42,8 @@ function PublicRouter() {
 }
 
 function Router() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
+  const isAuthenticated = !!user;
 
   if (loading) {
     return (
@@ -62,10 +63,12 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

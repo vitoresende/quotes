@@ -105,3 +105,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Service Account Keys
+quotes-vitor-firebase-adminsdk-fbsvc-76f5185dcf.json
