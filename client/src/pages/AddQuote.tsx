@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,7 +61,7 @@ export default function AddQuote() {
       source: formData.source || undefined,
       author: formData.author || undefined,
       pageNumber: formData.pageNumber ? parseInt(formData.pageNumber) : undefined,
-      collectionId: parseInt(formData.collectionId),
+      collectionId: formData.collectionId, // Changed to string
     });
   };
 
@@ -137,7 +137,7 @@ export default function AddQuote() {
                   </SelectTrigger>
                   <SelectContent>
                     {collections.map((collection) => (
-                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                      <SelectItem key={collection.id} value={collection.id}>
                         {collection.name}
                       </SelectItem>
                     ))}

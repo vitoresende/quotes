@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 export default function Collections() {
   const { user, loading } = useAuth();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null); // Changed to string
   const [formData, setFormData] = useState({ name: "", description: "", color: "#3b82f6" });
 
   const { data: collections = [], refetch: refetchCollections } = trpc.collections.list.useQuery(undefined, {
@@ -87,7 +87,7 @@ export default function Collections() {
     setIsCreateOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => { // Changed to string
     if (confirm("Are you sure you want to delete this collection?")) {
       deleteMutation.mutate({ id });
     }

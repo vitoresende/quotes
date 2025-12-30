@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,7 +93,7 @@ export default function KindleSync() {
 
     syncMutation.mutate({
       highlights,
-      collectionId: parseInt(selectedCollection),
+      collectionId: selectedCollection, // collectionId is now string
     });
   };
 

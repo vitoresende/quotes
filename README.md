@@ -1,6 +1,6 @@
 # Quote Keeper - Smart Quote Manager
 
-A full-stack web application inspired by Readwise that helps you discover, organize, and synchronize meaningful quotes from books and personal collections. Built with React, Express, tRPC, and a modern tech stack with Google Sign-In authentication and email whitelist access control.
+A full-stack web application that helps you discover, organize, and synchronize meaningful quotes from books and personal collections. Now powered by **React, Firebase Cloud Functions, Firestore, and Firebase Authentication**.
 
 ## Features
 
@@ -23,8 +23,8 @@ A full-stack web application inspired by Readwise that helps you discover, organ
 - **Flexible Import Format**: Support for CSV and plain text formats from Kindle exports
 
 **Authentication & Access Control**
-- **Google Sign-In**: Secure authentication using Google OAuth
-- **Email Whitelist**: Database-driven access control - only whitelisted emails can access the application
+- **Google Sign-In**: Secure authentication using Firebase Authentication
+- **Email Whitelist**: Firestore-driven access control - only whitelisted emails can access the application
 - **Admin Management**: Administrators can add/remove emails from the whitelist
 - **Role-Based Access**: Support for admin and user roles
 
@@ -44,230 +44,183 @@ A full-stack web application inspired by Readwise that helps you discover, organ
 - tRPC for type-safe API calls
 
 **Backend**
-- Express 4 for HTTP server
+- Firebase Cloud Functions (TypeScript) for serverless API
 - tRPC 11 for RPC procedures
-- Node.js with TypeScript
+- Firebase Admin SDK
 
 **Database**
-- MySQL/TiDB for data persistence
-- Drizzle ORM for type-safe database operations
-- Automatic migrations with drizzle-kit
+- Google Cloud Firestore for data persistence
 
 **Authentication**
-- Manus OAuth for Google Sign-In
-- JWT-based session management
-- Email whitelist validation middleware
+- Firebase Authentication (Google Sign-In)
+- Firebase Admin SDK for backend token verification
+- Firestore-based email whitelist
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 22.13.0 or higher
-- pnpm 10.4.1 or higher
-- A Google account for OAuth setup
-- MySQL/TiDB database connection string
+- Node.js 20 or higher
+- npm (installed with Node.js)
+- Firebase CLI (`npm install -g firebase-tools` if you don't have it)
+- A Google account for Firebase setup
+
+### Firebase Project Setup (Manual Steps in Firebase Console)
+
+1.  **Create a Firebase Project:**
+    *   Go to the [Firebase Console](https://console.firebase.google.com/).
+    *   Click "Add project" and follow the instructions.
+
+2.  **Enable Firebase Authentication:**
+    *   In your Firebase project, navigate to **Build > Authentication**.
+    *   Go to the "Sign-in method" tab and enable the **Google** provider.
+    *   **Crucially, add your app's authorized domains.** For local development, add `localhost` and `localhost:5173` (or whatever port your Vite dev server runs on).
+
+3.  **Enable Firestore Database:**
+    *   In your Firebase project, navigate to **Build > Firestore Database**.
+    *   Click "Create database" and choose "Start in production mode" (you can adjust security rules later).
+
+4.  **Get Frontend Configuration (`firebaseConfig`):**
+    *   In Firebase Console > Project Overview, click the Web app icon (`</>`) to add a web app.
+    *   Register your app and **copy the `firebaseConfig` object**. You'll add this to your local `.env` file.
+
+5.  **Get Backend Service Account Key (for Local Emulation):**
+    *   In Firebase Console > Project settings (gear icon) > "Service accounts" tab.
+    *   Click "Generate new private key". A JSON file will be downloaded.
+    *   **Save this file securely** (e.g., in your project root, but remember it's in `.gitignore`). You'll use its path as an environment variable for local emulation.
 
 ### Installation
 
-1. **Clone or download the project**
-   ```bash
-   cd readwise-clone
-   ```
+1.  **Clone or download the project**
+    ```bash
+    git clone your-repo-url
+    cd quote-keeper
+    ```
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+2.  **Install root dependencies**
+    ```bash
+    npm install
+    ```
 
-3. **Set up environment variables**
-   
-   The following environment variables are automatically provided by the platform:
-   - `DATABASE_URL`: Your MySQL/TiDB connection string
-   - `JWT_SECRET`: Session signing secret
-   - `VITE_APP_ID`: OAuth application ID
-   - `OAUTH_SERVER_URL`: OAuth server URL
-   - `VITE_OAUTH_PORTAL_URL`: OAuth portal URL
-   - `OWNER_OPEN_ID`: Owner's OAuth identifier
-   - `OWNER_NAME`: Owner's name
+3.  **Install Firebase Functions dependencies**
+    ```bash
+    npm install --prefix functions
+    ```
 
-4. **Initialize the database**
-   ```bash
-   pnpm db:push
-   ```
-   
-   This command generates and applies database migrations based on your schema.
+4.  **Set up environment variables**
 
-5. **Start the development server**
-   ```bash
-   pnpm dev
-   ```
-   
-   The application will be available at `http://localhost:3000`
+    Create a `.env` file in the project root with the following (replace placeholders with your actual values):
 
-6. **Build for production**
-   ```bash
-   pnpm build
-   ```
-   
-   This creates optimized production builds in the `dist` directory.
+    ```env
+    VITE_FIREBASE_API_KEY="YOUR_FIREBASE_API_KEY"
+    VITE_FIREBASE_AUTH_DOMAIN="YOUR_FIREBASE_AUTH_DOMAIN"
+    VITE_FIREBASE_PROJECT_ID="YOUR_FIREBASE_PROJECT_ID"
+    VITE_FIREBASE_STORAGE_BUCKET="YOUR_FIREBASE_STORAGE_BUCKET"
+    VITE_FIREBASE_MESSAGING_SENDER_ID="YOUR_FIREBASE_MESSAGING_SENDER_ID"
+    VITE_FIREBASE_APP_ID="YOUR_FIREBASE_APP_ID"
 
-### Initial Setup
+    # For local Firebase Functions emulation with admin privileges
+    # Replace with the actual path to your downloaded Service Account Key JSON file
+    # Example: /home/user/my-project/quotes-vitor-firebase-adminsdk-fbsvc-xxxx.json
+    GOOGLE_APPLICATION_CREDENTIALS="YOUR_PATH_TO_SERVICE_ACCOUNT_KEY.json"
+    ```
+    *   **IMPORTANT:** The `GOOGLE_APPLICATION_CREDENTIALS` variable should point to the absolute path of the JSON file you downloaded. This is only needed for local emulation of Cloud Functions that require Admin SDK privileges.
 
-1. **Add your email to the whitelist**
-   
-   Since the application uses email whitelist access control, you need to add your email to the database before you can log in. As the application owner, you have admin privileges by default.
-   
-   Connect to your database and add your email:
-   ```sql
-   INSERT INTO email_whitelist (email, addedBy, createdAt, updatedAt) 
-   VALUES ('your-email@example.com', 1, NOW(), NOW());
-   ```
+### Running the Development Server
 
-2. **Log in with Google**
-   
-   Click "Sign in with Google" on the login page and authenticate with your Google account associated with the whitelisted email.
+You'll need two separate terminal windows:
 
-3. **Create your first collection**
-   
-   Once logged in, navigate to "Collections" and create your first collection to start organizing quotes.
+**Terminal 1: Firebase Emulators (Backend)**
+
+1.  **Set the Service Account Key environment variable (for this session):**
+    ```bash
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/quotes-vitor-firebase-adminsdk-fbsvc-xxxx.json"
+    ```
+    (Replace with the actual absolute path to your JSON file)
+
+2.  **Start the Firebase Emulators:**
+    ```bash
+    npm start
+    ```
+    This will start the Functions and Firestore emulators. Note the URL for your `api` function (usually `http://127.0.0.1:5001/YOUR_PROJECT_ID/us-central1/api`). The frontend is pre-configured to use this.
+
+**Terminal 2: Vite Development Server (Frontend)**
+
+1.  **Start the Vite dev server:**
+    ```bash
+    npm run dev
+    ```
+    This will compile and serve your React application.
+
+After both are running, open your browser to the address provided by the Vite dev server (e.g., `http://localhost:5173`).
+
+### Initial Setup (After Login)
+
+1.  **Log in with Google:** Click "Sign in with Google" on the login page.
+2.  **Add your email to the whitelist (if restricted):** If your application uses an email whitelist for access control, you might need to add your email via the Firebase Console (by manually adding a document to the `whitelist` collection in Firestore with your email as ID) or via an admin interface if implemented.
+3.  **Create your first collection:** Navigate to "Collections" and create your first collection to start organizing quotes.
+
+## Managing Email Whitelist
+
+As an admin user, you can manage who has access to the application via the `whitelist` collection in Firestore.
+
+### Adding Emails to Whitelist
+
+Administrators can add emails via the app's interface (if implemented) or directly in Firestore:
+1.  Go to Firebase Console > Firestore Database.
+2.  Navigate to the `whitelist` collection.
+3.  Add a new document with the email address as the Document ID (e.g., `new-user@example.com`).
+4.  Optionally add fields like `addedBy` (UID of admin user) and `addedAt` (timestamp).
+
+### Removing Emails from Whitelist
+
+Delete the corresponding document from the `whitelist` collection in Firestore.
 
 ## Syncing Kindle Highlights
 
+(Content remains largely the same, but the "Importing into Quote Keeper" section should mention selecting a collection and the format for highlight IDs is handled internally by the new Firestore logic.)
+
 ### How to Export Highlights from Kindle
 
-Kindle provides multiple ways to export your highlights. Here are the most straightforward methods:
-
-#### Method 1: From Kindle Cloud Reader (Recommended)
-
-1. Go to [read.amazon.com](https://read.amazon.com)
-2. Log in with your Amazon account
-3. Open any book you've highlighted
-4. Click the "Notes" tab at the top
-5. You'll see all your highlights listed
-6. Select and copy the highlights you want to export
-7. Paste them into a text file or directly into Quote Keeper
-
-#### Method 2: From Kindle Device or App
-
-**On Kindle E-Readers (Paperwhite, Oasis, etc.):**
-1. Open the book containing your highlights
-2. Tap the top of the screen
-3. Select the "Notebook" or "Notes" icon
-4. Tap "Export Notes" at the bottom
-5. Choose email as the export destination
-6. You'll receive a CSV or PDF file with your highlights
-
-**On Kindle Mobile App (iOS/Android):**
-1. Open the book in the Kindle app
-2. Tap the screen center to show the menu
-3. Select the "Notebook" icon
-4. Tap the menu (three dots) in the top-right corner
-5. Select "Export Notebook"
-6. Choose your export format (CSV or PDF)
-7. Select email destination
-
-#### Method 3: Using Third-Party Tools
-
-Several services can help export Kindle highlights:
-- **Glasp**: Browser extension for highlighting and exporting (supports CSV, TXT, MD)
-- **Clippings.io**: Web service for exporting Kindle highlights
-- **Bookcision**: Bookmarklet for extracting highlights from Kindle Cloud Reader
+(Existing content is fine)
 
 ### Importing into Quote Keeper
 
-1. **Navigate to Kindle Sync** in the application menu
-2. **Select a target collection** where the quotes will be saved
-3. **Choose import method**:
-   - **Paste directly**: Copy and paste highlights from Kindle Cloud Reader
-   - **Upload file**: Upload a CSV or TXT file exported from your Kindle device
-4. **Format your highlights** (one per line):
-   ```
-   Quote text here,Author Name,Book Title,Page Number
-   "To be or not to be","William Shakespeare","Hamlet",42
-   "It was the best of times","Charles Dickens","A Tale of Two Cities",1
-   ```
-5. **Click "Sync Highlights"**
-6. The system will automatically:
-   - Detect and skip duplicate highlights (using unique Kindle highlight IDs)
-   - Create new quote entries in your selected collection
-   - Track sync metadata for future reference
+1.  **Navigate to Kindle Sync** in the application menu
+2.  **Select a target collection** where the quotes will be saved
+3.  **Choose import method**:
+    -   **Paste directly**: Copy and paste highlights from Kindle Cloud Reader
+    -   **Upload file**: Upload a CSV or TXT file exported from your Kindle device
+4.  **Format your highlights** (one per line):
+    ```
+    Quote text here,Author Name,Book Title,Page Number
+    "To be or not to be","William Shakespeare","Hamlet",42
+    "It was the best of times","Charles Dickens","A Tale of Two Cities",1
+    ```
+5.  **Click "Sync Highlights"**
+6.  The system will automatically:
+    -   Detect and skip duplicate highlights (using unique Kindle highlight IDs)
+    -   Create new quote entries in your selected collection
+    -   Track sync metadata for future reference in the `kindleSyncLog` subcollection under your user document.
 
 ### Preventing Duplicates
 
 Quote Keeper uses unique Kindle highlight IDs to prevent duplicates. If you sync the same highlights multiple times, the system will:
-- Recognize previously imported highlights
-- Skip them in the new sync
-- Report the number of duplicates found
+-   Recognize previously imported highlights
+-   Skip them in the new sync
+-   Report the number of duplicates found
 
 This ensures your quote library stays clean and organized without manual duplicate management.
-
-## Managing Email Whitelist
-
-As an admin user, you can manage who has access to the application:
-
-### Adding Emails to Whitelist
-
-1. Go to the application settings (if available in your deployment)
-2. Navigate to the "Whitelist" section
-3. Enter the email address you want to allow
-4. Click "Add Email"
-
-Alternatively, add directly to the database:
-```sql
-INSERT INTO email_whitelist (email, addedBy, createdAt, updatedAt) 
-VALUES ('new-user@example.com', 1, NOW(), NOW());
-```
-
-### Removing Emails from Whitelist
-
-1. Go to the "Whitelist" section in settings
-2. Find the email you want to remove
-3. Click "Remove"
-
-Or via database:
-```sql
-DELETE FROM email_whitelist WHERE email = 'user@example.com';
-```
-
-## Database Schema
-
-### Users Table
-Stores authenticated user information with OAuth integration.
-
-### Email Whitelist Table
-Controls which emails are allowed to access the application.
-
-### Collections Table
-Organizes quotes by source, author, theme, or custom categories.
-
-### Quotes Table
-Core content table storing quote text, metadata, and read tracking.
-
-### Kindle Sync Log Table
-Tracks synchronization history and statistics.
 
 ## Development
 
 ### Running Tests
 
 ```bash
-pnpm test
+npm test
 ```
 
-Tests are written with Vitest and cover authentication, quote management, and API procedures.
-
-### Database Migrations
-
-When you modify the schema in `drizzle/schema.ts`:
-
-```bash
-pnpm db:push
-```
-
-This command:
-1. Generates migration files
-2. Applies migrations to your database
-3. Updates generated types
+Tests are written with Vitest and cover API procedures.
 
 ### Project Structure
 
@@ -276,151 +229,62 @@ client/
   src/
     pages/          # Page components (Home, Collections, AddQuote, etc.)
     components/     # Reusable UI components
-    lib/            # tRPC client setup
+    lib/            # Firebase client SDK setup, tRPC client setup
     contexts/       # React contexts (theme, auth)
     App.tsx         # Main app routing
-drizzle/
-  schema.ts         # Database schema definitions
-server/
-  routers.ts        # tRPC procedure definitions
-  db.ts             # Database query helpers
-  _core/            # Core framework files (auth, context, etc.)
+functions/
+  src/
+    # Firebase Cloud Functions code (tRPC backend, Firestore logic)
+firebase.json       # Firebase project configuration
+.firebaserc         # Firebase project alias
 ```
 
 ## Deployment
 
-### Deploying to Production
+To deploy your Firebase Cloud Functions and Firestore rules:
 
-1. **Build the application**
-   ```bash
-   pnpm build
-   ```
-
-2. **Set production environment variables**
-   
-   Ensure all required environment variables are set in your production environment:
-   - `DATABASE_URL`: Production database connection
-   - `JWT_SECRET`: Strong random secret for sessions
-   - `NODE_ENV`: Set to "production"
-   - All OAuth-related variables
-
-3. **Start the production server**
-   ```bash
-   pnpm start
-   ```
-
-4. **Configure reverse proxy** (nginx/Apache)
-   
-   Route all requests to the Express server running on port 3000:
-   ```nginx
-   location / {
-     proxy_pass http://localhost:3000;
-     proxy_http_version 1.1;
-     proxy_set_header Upgrade $http_upgrade;
-     proxy_set_header Connection 'upgrade';
-     proxy_set_header Host $host;
-     proxy_cache_bypass $http_upgrade;
-   }
-   ```
-
-### Deployment Platforms
-
-The application can be deployed to:
-- **Vercel**: Optimized for Node.js applications
-- **Heroku**: Simple deployment with environment variables
-- **DigitalOcean App Platform**: Full control with app specs
-- **AWS EC2**: Traditional VPS deployment
-- **Docker**: Containerized deployment with Docker Compose
-
-### Docker Deployment
-
-Create a `Dockerfile`:
-```dockerfile
-FROM node:22-alpine
-
-WORKDIR /app
-
-COPY package*.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-
-COPY . .
-
-RUN pnpm build
-
-EXPOSE 3000
-
-CMD ["pnpm", "start"]
-```
-
-Build and run:
 ```bash
-docker build -t quote-keeper .
-docker run -p 3000:3000 -e DATABASE_URL="..." quote-keeper
+npm run deploy
 ```
+This command (which executes `firebase deploy`) will deploy your functions, Firestore indexes, and security rules to your Firebase project.
 
 ## Troubleshooting
 
-### Database Connection Issues
+### Firebase Configuration Issues
 
-**Error: "Cannot connect to database"**
-- Verify `DATABASE_URL` is correct and accessible
-- Ensure database user has proper permissions
-- Check firewall rules allow connections
+**Error: `CONFIGURATION_NOT_FOUND` during login**
+-   Verify your `VITE_FIREBASE_API_KEY` in `.env` matches the "Web API Key" in Firebase Project Settings.
+-   Ensure `localhost` (and specifically `localhost:5173` or your Vite port) is added to the "Authorized domains" list in Firebase Console > Project settings > Authentication > Settings.
 
-### OAuth Login Fails
+**Error: `permission-denied` for Firestore operations**
+-   Check your Firestore Security Rules in the Firebase Console. By default, "production mode" rules deny all access. You'll need to write rules that allow authenticated users to read/write their own data.
 
-**Error: "Email not authorized"**
-- Verify your email is added to the email whitelist
-- Check that the email matches exactly (case-insensitive)
-- Contact an admin to add your email
+### Local Emulation Issues
 
-### Kindle Sync Issues
+**Error: `GOOGLE_APPLICATION_CREDENTIALS` not set**
+-   Ensure you have set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable in your terminal before starting the Firebase Emulators (`npm start`). It must point to the absolute path of your service account JSON file.
 
-**Error: "No valid highlights found"**
-- Verify highlights are formatted correctly (one per line)
-- Ensure highlight text is not empty
-- Check that you've selected a valid collection
+### Quotes, Collections, Kindle Sync Errors
 
-**Duplicates not being detected**
-- Ensure you're using the same Kindle export format
-- Verify Kindle highlight IDs are included in the export
-- Check sync logs for previous sync dates
-
-## Performance Optimization
-
-### Frontend
-- Code splitting with React lazy loading
-- Optimized bundle size with tree-shaking
-- Responsive images and lazy loading
-
-### Backend
-- Database query optimization with Drizzle ORM
-- Connection pooling for database
-- Caching of frequently accessed data
-
-### Database
-- Indexes on frequently queried columns (userId, collectionId, kindleHighlightId)
-- Proper foreign key relationships
-- Regular maintenance and optimization
+-   Ensure the Firebase Emulators (especially Functions and Firestore) are running when you run the frontend.
+-   Check the emulator logs for any backend errors during API calls.
 
 ## Security Considerations
 
-1. **Email Whitelist**: Only whitelisted emails can access the application
-2. **JWT Sessions**: Secure cookie-based sessions with JWT signing
-3. **HTTPS**: Always use HTTPS in production
-4. **Environment Variables**: Never commit sensitive data; use environment variables
-5. **SQL Injection**: Protected by Drizzle ORM parameterized queries
-6. **CORS**: Configure appropriate CORS headers for your domain
+1.  **Firebase Authentication**: Secure user management.
+2.  **Firestore Security Rules**: Crucial for controlling data access. Define rules to ensure users can only read/write their own data (`request.auth.uid == resource.data.userId`).
+3.  **Environment Variables**: Never commit sensitive data; use environment variables (`.env`).
+4.  **HTTPS**: Firebase automatically enforces HTTPS for deployed functions.
 
 ## Contributing
 
 To contribute to Quote Keeper:
 
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make your changes and write tests
-3. Run tests: `pnpm test`
-4. Commit with clear messages: `git commit -m "feat: add new feature"`
-5. Push and create a pull request
+1.  Create a feature branch: `git checkout -b feature/your-feature`
+2.  Make your changes and write tests
+3.  Run tests: `npm test`
+4.  Commit with clear messages: `git commit -m "feat: add new feature"`
+5.  Push and create a pull request
 
 ## License
 
@@ -429,9 +293,9 @@ This project is provided as-is for personal and educational use.
 ## Support
 
 For issues, questions, or suggestions:
-- Check the troubleshooting section above
-- Review the code comments in key files
-- Examine test files for usage examples
+-   Check the troubleshooting section above
+-   Review the code comments in key files
+-   Examine test files for usage examples
 
 ## Roadmap
 
@@ -452,5 +316,5 @@ Quote Keeper is inspired by [Readwise](https://readwise.io/), a powerful tool fo
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: November 2025  
-**Author**: Manus AI
+**Last Updated**: December 2025  
+**Author**: Gemini AI

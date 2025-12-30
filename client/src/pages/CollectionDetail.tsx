@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +20,7 @@ interface CollectionDetailProps {
 export default function CollectionDetail({ params }: CollectionDetailProps) {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
-  const collectionId = parseInt(params.id);
+  const collectionId = params.id; // Changed to string
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editData, setEditData] = useState({ name: "", description: "", color: "#3b82f6" });
 
@@ -95,7 +95,7 @@ export default function CollectionDetail({ params }: CollectionDetailProps) {
     }
   };
 
-  const handleDeleteQuote = (quoteId: number) => {
+  const handleDeleteQuote = (quoteId: string) => { // Changed to string
     if (confirm("Are you sure you want to delete this quote?")) {
       deleteQuoteMutation.mutate({ id: quoteId });
     }

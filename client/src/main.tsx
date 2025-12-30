@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "http://127.0.0.1:5001/quotes-vitor/us-central1/api/trpc",
+      url: "http://127.0.0.1:8481/quotes-vitor/us-central1/api/trpc",
       transformer: superjson,
       async headers() {
         const user = auth.currentUser;
