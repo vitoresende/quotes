@@ -111,3 +111,5 @@ quotes-vitor-firebase-adminsdk-fbsvc-76f5185dcf.json
 
 # Functions environment file
 functions/.env
+
+.firebase/*

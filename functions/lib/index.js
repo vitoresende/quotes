@@ -45,7 +45,7 @@ const routers_1 = require("./routers");
 const context_1 = require("./context");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({ origin: true }));
-app.use("/trpc", trpcExpress.createExpressMiddleware({
+app.use("/api/trpc", trpcExpress.createExpressMiddleware({
     router: routers_1.appRouter,
     createContext: context_1.createContext,
 }));

@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the incoming data's userId matches the user's UID
+    // This assumes that documents in the collection have a 'userId' field.
+    function isOwner(resource) {
+      return request.auth.uid == resource.data.userId;
+    }
+    
+    // Helper function to check if the user is an admin
+    // This assumes you have a custom claim 'admin' set to true for admin users.
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    // Whitelist: Only admins can write. Authenticated users can read their own email entry 
+    // to check if they are whitelisted.
+    match /whitelist/{email} {
+      allow read: if isAuthenticated() && request.auth.token.email == email;
+      allow write: if isAdmin();
+    }
+
+    // Collections: Users can only manage their own collections.
+    match /collections/{collectionId} {
+      allow read, update, delete: if isAuthenticated() && isOwner(get(path));
+      allow create: if isAuthenticated() && isOwner(request.resource);
+    }
+    
+    // Quotes: Users can only manage quotes. 
+    // This assumes quotes have a `userId` field for security.
+    match /quotes/{quoteId} {
+      allow read, update, delete: if isAuthenticated() && isOwner(get(path));
+      allow create: if isAuthenticated() && isOwner(request.resource);
+    }
+    
+    // Kindle Sync Log is now a subcollection under the user's document
+    match /users/{userId} {
+      allow read, create, update: if request.auth.uid == userId;
+      allow delete: if false; // Users should not be able to delete their own user document.
+
+      match /kindleSyncLog/{logId} {
+        allow read, create: if request.auth.uid == userId;
+        allow update, delete: if false; // Logs should not be changed or deleted by users.
+      }
+    }
+  }
+}

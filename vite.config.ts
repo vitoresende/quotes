@@ -25,10 +25,17 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    proxy: {
+      '/api': {
+        target: 'https://us-central1-quotes-vitor.cloudfunctions.net/api',
+        changeOrigin: true,
+      },
+    },
     host: true,
     allowedHosts: [
       "localhost",
       "127.0.0.1",
+      "quotes.vitoresende.dev"
     ],
     fs: {
       strict: true,

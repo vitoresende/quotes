@@ -6,6 +6,7 @@ A full-stack web application that helps you discover, organize, and synchronize 
 
 **Quote Discovery & Management**
 - **Smart Random Quote Display**: View random quotes with intelligent weighting that prioritizes unread quotes while avoiding repetition
+- **Formatted Text Display**: Correctly renders multiline quotes with proper line breaks.
 - **Quote Navigation**: Browse through your quote history with previous/next navigation
 - **Read Tracking**: Mark quotes as read and track how many times you've viewed each quote
 - **Manual Quote Entry**: Add quotes with metadata including author, source, page number, and custom collections
@@ -34,7 +35,7 @@ A full-stack web application that helps you discover, organize, and synchronize 
 - **Dashboard Navigation**: Intuitive sidebar navigation with quick access to all features
 - **Real-Time Feedback**: Toast notifications for all user actions
 
-## Technology Stack
+## Technology Stack & Architecture
 
 **Frontend**
 - React 19 with TypeScript
@@ -48,13 +49,11 @@ A full-stack web application that helps you discover, organize, and synchronize 
 - tRPC 11 for RPC procedures
 - Firebase Admin SDK
 
-**Database**
-- Google Cloud Firestore for data persistence
+**Database & Hosting**
+- **Google Cloud Firestore**: For data persistence.
+- **Firebase Hosting**: Hosts the static frontend assets.
+- **API Proxying**: Firebase Hosting is configured with a rewrite rule that proxies all requests from the frontend at `/api/**` directly to the `api` Cloud Function. This decouples the frontend from the backend URL and simplifies API calls.
 
-**Authentication**
-- Firebase Authentication (Google Sign-In)
-- Firebase Admin SDK for backend token verification
-- Firestore-based email whitelist
 
 ## Setup & Local Development
 
@@ -113,29 +112,120 @@ This will start the Vite development server (e.g., at `http://localhost:5173`). 
 
 ## Deployment
 
-The backend logic resides in a Firebase Function that needs to be deployed.
+The deployment process bundles the frontend application and deploys it to Firebase Hosting, along with the backend Cloud Function and Firestore security rules.
 
-### Step 1: Deploy the Function
+### Step 1: Build the Frontend
 
-Ensure you are in the **root directory** of the project, then run:
+This command bundles the React application into the `dist/public` directory, ready for deployment.
 
 ```bash
-firebase deploy --only functions
+npm run build
 ```
-This command compiles the TypeScript code in the `functions` directory (by automatically running `npm run build` inside it) and deploys it to your Firebase project.
 
-### Step 2: Post-Deployment Configuration (Crucial!)
+### Step 2: Deploy to Firebase
 
-By default, newly deployed functions are **private** and cannot be accessed from a public website, which results in a CORS or Authentication error. You must make the function public.
+This single command will deploy everything configured in `firebase.json` (Hosting, Functions, and Firestore rules).
+
+```bash
+firebase deploy
+```
+
+### Step 3: Post-Deployment Configuration (Crucial!)
+
+By default, newly deployed functions are **private**. You must make the `api` function public for the frontend to be able to call it.
 
 1.  **Go to the Google Cloud Console**: [console.cloud.google.com](https://console.cloud.google.com/)
 2.  **Navigate to Cloud Run**: Use the search bar or the navigation menu.
-3.  **Select the `api` service**: This is your newly deployed function.
-4.  **Go to the "SECURITY" tab**.
+3.  **Select the `api` service**.
+4.  Go to the **"SECURITY"** tab.
 5.  Under **Authentication**, select **"Allow unauthenticated invocations"**.
 6.  Click **"SAVE"**.
 
-After a moment, your deployed function will be publicly accessible, and your frontend application will be able to communicate with it.
+## Syncing Kindle Highlights
+
+### How to Export Highlights from Kindle
+
+Kindle provides multiple ways to export your highlights. Here are the most straightforward methods:
+
+#### Method 1: From Kindle Cloud Reader (Recommended)
+
+1. Go to [read.amazon.com](https://read.amazon.com)
+2. Log in with your Amazon account
+3. Open any book you've highlighted
+4. Click the "Notes" tab at the top
+5. You'll see all your highlights listed
+6. Select and copy the highlights you want to export
+7. Paste them into a text file or directly into Quote Keeper
+
+#### Method 2: From Kindle Device or App
+
+**On Kindle E-Readers (Paperwhite, Oasis, etc.):**
+1. Open the book containing your highlights
+2. Tap the top of the screen
+3. Select the "Notebook" or "Notes" icon
+4. Tap "Export Notes" at the bottom
+5. Choose email as the export destination
+6. You'll receive a CSV or PDF file with your highlights
+
+**On Kindle Mobile App (iOS/Android):**
+1. Open the book in the Kindle app
+2. Tap the screen center to show the menu
+3. Select the "Notebook" icon
+4. Tap the menu (three dots) in the top-right corner
+5. Select "Export Notebook"
+6. Choose your export format (CSV or PDF)
+7. Select email destination
+
+#### Method 3: Using Third-Party Tools
+
+Several services can help export Kindle highlights:
+- **Glasp**: Browser extension for highlighting and exporting (supports CSV, TXT, MD)
+- **Clippings.io**: Web service for exporting Kindle highlights
+- **Bookcision**: Bookmarklet for extracting highlights from Kindle Cloud Reader
+
+### Importing into Quote Keeper
+
+1. **Navigate to Kindle Sync** in the application menu
+2. **Select a target collection** where the quotes will be saved
+3. **Choose import method**:
+   - **Paste directly**: Copy and paste highlights from Kindle Cloud Reader
+   - **Upload file**: Upload a CSV or TXT file exported from your Kindle device
+4. **Format your highlights** (one per line):
+   ```
+   Quote text here,Author Name,Book Title,Page Number
+   "To be or not to be","William Shakespeare","Hamlet",42
+   "It was the best of times","Charles Dickens","A Tale of Two Cities",1
+   ```
+5. **Click "Sync Highlights"**
+6. The system will automatically:
+   - Detect and skip duplicate highlights (using unique Kindle highlight IDs)
+   - Create new quote entries in your selected collection
+   - Track sync metadata for future reference
+
+### Preventing Duplicates
+
+Quote Keeper uses unique Kindle highlight IDs to prevent duplicates. If you sync the same highlights multiple times, the system will:
+- Recognize previously imported highlights
+- Skip them in the new sync
+- Report the number of duplicates found
+
+This ensures your quote library stays clean and organized without manual duplicate management.
+
+## Security Model
+
+The application's data security is enforced by Firestore Security Rules defined in `firestore.rules`.
+
+- **User Data Ownership:** The primary security principle is that users can only read and write their own data.
+- **`userId` Field:** This is achieved by requiring a `userId` field on all user-specific documents (e.g., in the `collections` and `quotes` collections). The rules check if the authenticated user's UID (`request.auth.uid`) matches the `userId` on the document before allowing access.
+- **Backend Responsibility:** The backend Cloud Function is responsible for adding the correct `userId` to every new document it creates.
+
+## Frontend Development Notes
+
+### Page Layout and Padding
+
+- The main layout component (`DashboardLayout.tsx`) provides a full-height, scrolling content area but does **not** provide default padding.
+- **Each individual page component** (e.g., `Home.tsx`, `Collections.tsx`) is responsible for its own internal padding.
+- The standard convention in this project is to add a `className="p-4"` to the root element of each page component to ensure consistent spacing.
 
 ## Troubleshooting
 
