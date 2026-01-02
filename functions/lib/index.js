@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.api = void 0;
-const functions = __importStar(require("firebase-functions"));
+const https_1 = require("firebase-functions/v2/https");
 const trpcExpress = __importStar(require("@trpc/server/adapters/express"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
@@ -49,5 +49,5 @@ app.use("/trpc", trpcExpress.createExpressMiddleware({
     router: routers_1.appRouter,
     createContext: context_1.createContext,
 }));
-exports.api = functions.https.onRequest(app);
+exports.api = (0, https_1.onRequest)(app);
 //# sourceMappingURL=index.js.map

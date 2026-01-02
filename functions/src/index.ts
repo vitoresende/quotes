@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import express from "express";
 import cors from "cors";
@@ -17,4 +17,4 @@ app.use(
   })
 );
 
-export const api = functions.https.onRequest(app);
+export const api = onRequest(app);

@@ -11,7 +11,7 @@ if (process.env.NODE_ENV !== "production") {
 // Initialize the Firebase Admin SDK.
 // When deployed to Firebase, the SDK automatically picks up the configuration.
 // For local development, we check if a service account path is provided.
-if (process.env.SERVICE_ACCOUNT_PATH) {
+if (process.env.NODE_ENV !== 'production' && process.env.SERVICE_ACCOUNT_PATH) {
   // Ensure the path is absolute for Node.js require/read operations
   const serviceAccountPath = path.resolve(process.cwd(), process.env.SERVICE_ACCOUNT_PATH);
   

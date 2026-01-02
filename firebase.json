@@ -8,21 +8,21 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log"
-      ],
-      "emulators": {
-        "auth": {
-          "port": 9099
-        },
-        "firestore": {
-          "port": 8080
-        },
-        "ui": {
-          "port": 4000
-        },
-        "functions": {
-          "port": 8481
-        }
-      }
+      ]
     }
-  ]
+  ],
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "port": 4000
+    },
+    "functions": {
+      "port": 8481
+    }
+  }
 }
