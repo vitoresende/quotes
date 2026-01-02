@@ -170,8 +170,9 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  <img src="/logo.png" alt="Quote Keeper Logo" className="h-6 w-6" />
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    Quote Keeper
                   </span>
                 </div>
               ) : null}
@@ -257,7 +258,9 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 overflow-y-auto min-h-0">
+          {children}
+        </main>
       </SidebarInset>
     </>
   );
