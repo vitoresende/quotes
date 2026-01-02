@@ -23,6 +23,7 @@ if (process.env.NODE_ENV !== 'production' && process.env.SERVICE_ACCOUNT_PATH) {
 } else {
   // Use default credential when deployed to Firebase Functions
   admin.initializeApp();
+  admin.firestore().settings({ ignoreUndefinedProperties: true });
 }
 
 export const firebaseAdmin = admin;
