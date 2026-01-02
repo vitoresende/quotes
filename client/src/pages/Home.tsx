@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatQuoteText } from "@/lib/utils"; // Adicionar esta linha
 
 export default function Home() {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -145,12 +146,13 @@ export default function Home() {
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Quote Card */}
         <Card className="shadow-xl border-0">
-          <CardContent className="pt-12 pb-12">
+          <CardContent>
             <div className="space-y-6">
               {/* Quote Text */}
-              <blockquote className="text-2xl md:text-3xl font-serif text-slate-900 italic leading-relaxed">
-                "{currentQuote.text}"
-              </blockquote>
+              <blockquote
+                className="font-serif text-slate-900 italic leading-relaxed"
+                dangerouslySetInnerHTML={formatQuoteText(currentQuote.text)}
+              />
 
               {/* Source Information */}
               <div className="space-y-2 border-t pt-6">

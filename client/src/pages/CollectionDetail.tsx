@@ -10,6 +10,7 @@ import { ArrowLeft, Edit2, Trash2, Loader2, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { formatQuoteText } from "@/lib/utils"; // Adicionar esta linha
 
 interface CollectionDetailProps {
   params: {
@@ -243,9 +244,10 @@ export default function CollectionDetail({ params }: CollectionDetailProps) {
             <Card key={quote.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <blockquote className="text-lg font-serif text-slate-900 italic">
-                    "{quote.text}"
-                  </blockquote>
+                  <blockquote
+                    className="text-lg font-serif text-slate-900 italic"
+                    dangerouslySetInnerHTML={formatQuoteText(quote.text)}
+                  />
                   <div className="space-y-1 text-sm text-slate-600">
                     {quote.author && <p><span className="font-semibold">Author:</span> {quote.author}</p>}
                     {quote.source && <p><span className="font-semibold">Source:</span> {quote.source}</p>}
