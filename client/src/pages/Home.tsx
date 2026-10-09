@@ -20,13 +20,19 @@ export default function Home() {
   });
 
   const markAsReadMutation = trpc.quotes.markAsRead.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast.success("Quote marked as read");
+      if (data?.readCount !== undefined) {
+        setCurrentQuote((prev: any) =>
+          prev ? { ...prev, isRead: true, readCount: data.readCount } : prev
+        );
+      }
     },
     onError: () => {
       toast.error("Failed to mark quote as read");
     },
   });
+
 
   // Load initial quote
   useEffect(() => {
@@ -83,10 +89,12 @@ export default function Home() {
 
   const handleMarkAsRead = () => {
     if (currentQuote) {
+      const nextCount = (currentQuote.readCount || 0) + 1;
       markAsReadMutation.mutate({ id: currentQuote.id });
-      setCurrentQuote({ ...currentQuote, isRead: true });
+      setCurrentQuote({ ...currentQuote, isRead: true, readCount: nextCount });
     }
   };
+
 
   if (loading) {
     return (
@@ -178,7 +186,9 @@ export default function Home() {
                 {currentQuote.isRead ? (
                   <div className="flex items-center gap-2 text-green-600">
                     <Eye className="w-4 h-4" />
-                    <span className="text-sm font-medium">Read {currentQuote.readCount} times</span>
+                    <span className="text-sm font-medium">
+                      Read {currentQuote.readCount || 1} {(currentQuote.readCount || 1) === 1 ? "time" : "times"}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-slate-500">
@@ -242,7 +252,9 @@ export default function Home() {
                 <p className="text-sm text-slate-600">Viewed</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{currentQuote.readCount || 0}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {currentQuote.isRead ? Math.max(currentQuote.readCount || 0, 1) : (currentQuote.readCount || 0)}
+                </p>
                 <p className="text-sm text-slate-600">Times Read</p>
               </div>
               <div>

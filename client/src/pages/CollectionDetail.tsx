@@ -256,11 +256,14 @@ export default function CollectionDetail({ params }: CollectionDetailProps) {
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="text-sm text-slate-500">
                       {quote.isRead ? (
-                        <span className="text-green-600 font-medium">Read {quote.readCount} times</span>
+                        <span className="text-green-600 font-medium">
+                          Read {quote.readCount || 1} {(quote.readCount || 1) === 1 ? "time" : "times"}
+                        </span>
                       ) : (
                         <span>Not read yet</span>
                       )}
                     </div>
+
                     <Button
                       variant="destructive"
                       size="sm"

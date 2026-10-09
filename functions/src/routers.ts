@@ -243,13 +243,15 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND" });
         }
         
+        const newReadCount = (doc.data()?.readCount || 0) + 1;
         await docRef.update({ 
           isRead: true,
           lastReadAt: new Date(),
-          readCount: (doc.data()?.readCount || 0) + 1
+          readCount: newReadCount
         });
-        return { success: true };
+        return { success: true, readCount: newReadCount };
       }),
+
     getRandom: protectedProcedure.query(async ({ ctx }) => {
       // This is more complex in Firestore. A simple approach is to fetch all,
       // but this is inefficient. A better approach for large datasets would be
