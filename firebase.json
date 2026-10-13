@@ -12,6 +12,10 @@
     }
   ],
   "hosting": {
+    "predeploy": [
+      "npm run version:bump",
+      "npm run build"
+    ],
     "public": "dist/public",
     "ignore": [
       "firebase.json",

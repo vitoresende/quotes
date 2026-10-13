@@ -31,10 +31,7 @@ steps:
         fi
         echo "🚀 Iniciando deploy completo para o projeto Firebase: $${TARGET_PROJECT}"
 
-        # Compilar Cloud Functions e Frontend Vite
-        npm run build
-
-        # Deploy no Firebase (hosting, functions, firestore:rules)
+        # Deploy no Firebase (o predeploy em firebase.json irá incrementar a versão e rodar o build)
         npx -y firebase-tools deploy --only hosting,functions,firestore:rules --non-interactive --project "$${TARGET_PROJECT}"
 
 options:

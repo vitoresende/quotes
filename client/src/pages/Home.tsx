@@ -5,26 +5,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { formatQuoteText } from "@/lib/utils"; // Adicionar esta linha
+import { formatQuoteText } from "@/lib/utils";
+import { APP_VERSION } from "@/constants/version";
 
 export default function Home() {
   const { user, loading, signInWithGoogle } = useAuth();
   const isAuthenticated = !!user;
   const [currentQuote, setCurrentQuote] = useState<any>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
-  const [quoteHistory, setQuoteHistory] = useState<string[]>([]);
+  const [quoteHistory, setQuoteHistory] = useState<any[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const utils = trpc.useUtils();
 
-  const { data: randomQuote, refetch: refetchQuote } = trpc.quotes.getRandom.useQuery(undefined, {
-    enabled: isAuthenticated && !loading,
+  const { data: randomQuote } = trpc.quotes.getRandom.useQuery(undefined, {
+    enabled: isAuthenticated && !loading && !currentQuote,
   });
 
   const markAsReadMutation = trpc.quotes.markAsRead.useMutation({
     onSuccess: (data: any) => {
       toast.success("Quote marked as read");
       if (data?.readCount !== undefined) {
+        const updatedCount = data.readCount;
         setCurrentQuote((prev: any) =>
-          prev ? { ...prev, isRead: true, readCount: data.readCount } : prev
+          prev ? { ...prev, isRead: true, readCount: updatedCount } : prev
+        );
+        setQuoteHistory((prev) =>
+          prev.map((q) =>
+            q.id === currentQuote?.id
+              ? { ...q, isRead: true, readCount: updatedCount }
+              : q
+          )
         );
       }
     },
@@ -33,23 +43,14 @@ export default function Home() {
     },
   });
 
-
   // Load initial quote
   useEffect(() => {
     if (isAuthenticated && randomQuote && !currentQuote) {
       setCurrentQuote(randomQuote);
-      setQuoteHistory([randomQuote.id]);
+      setQuoteHistory([randomQuote]);
       setHistoryIndex(0);
     }
   }, [isAuthenticated, randomQuote, currentQuote]);
-
-  // Update current quote when navigating history
-  useEffect(() => {
-    if (historyIndex >= 0 && historyIndex < quoteHistory.length && quoteHistory.length > 0) {
-      // In a real app, we'd fetch the quote details, but for now we'll use the current quote
-      // This is simplified - you might want to cache quotes or fetch them
-    }
-  }, [historyIndex, quoteHistory]);
 
   const handleNextQuote = async () => {
     setIsLoadingQuote(true);
@@ -57,20 +58,17 @@ export default function Home() {
       // If we're not at the end of history, move forward
       if (historyIndex < quoteHistory.length - 1) {
         const nextIndex = historyIndex + 1;
-        const quoteId = quoteHistory[nextIndex];
-        // Get quote from current quote's data if available, otherwise refetch
-        const quote = currentQuote.id === quoteId ? currentQuote : randomQuote;
-        if (quote) {
-          setCurrentQuote(quote);
-          setHistoryIndex(nextIndex);
-        }
+        setHistoryIndex(nextIndex);
+        setCurrentQuote(quoteHistory[nextIndex]);
       } else {
-        // Get a new random quote
-        const result = await refetchQuote();
-        if (result.data) {
-          setCurrentQuote(result.data);
-          setQuoteHistory([...quoteHistory, result.data.id]);
-          setHistoryIndex(quoteHistory.length);
+        // Fetch new quote with readCount-weighted algorithm excluding current quote
+        const nextQuote = await utils.quotes.getRandom.fetch(
+          currentQuote?.id ? { excludeId: currentQuote.id } : undefined
+        );
+        if (nextQuote) {
+          setCurrentQuote(nextQuote);
+          setQuoteHistory((prev) => [...prev, nextQuote]);
+          setHistoryIndex((prev) => prev + 1);
         }
       }
     } catch (error) {
@@ -84,14 +82,19 @@ export default function Home() {
     if (historyIndex > 0) {
       const prevIndex = historyIndex - 1;
       setHistoryIndex(prevIndex);
+      setCurrentQuote(quoteHistory[prevIndex]);
     }
   };
 
   const handleMarkAsRead = () => {
     if (currentQuote) {
       const nextCount = (currentQuote.readCount || 0) + 1;
+      const updated = { ...currentQuote, isRead: true, readCount: nextCount };
       markAsReadMutation.mutate({ id: currentQuote.id });
-      setCurrentQuote({ ...currentQuote, isRead: true, readCount: nextCount });
+      setCurrentQuote(updated);
+      setQuoteHistory((prev) =>
+        prev.map((q) => (q.id === currentQuote.id ? updated : q))
+      );
     }
   };
 
@@ -126,6 +129,9 @@ export default function Home() {
               </Button>
             </CardContent>
           </Card>
+          <p className="text-xs font-mono text-slate-400">
+            v{APP_VERSION}
+          </p>
         </div>
       </div>
     );
@@ -150,8 +156,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 sm:py-12 px-4">
+      <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
         {/* Quote Card */}
         <Card className="shadow-xl border-0">
           <CardContent>
@@ -201,45 +207,46 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Navigation Controls */}
-        <div className="flex items-center justify-between gap-4">
-            <Button
+        {/* Navigation Controls: Responsive grid perfectly aligned on mobile and desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Button
             variant="outline"
             size="lg"
             onClick={handlePreviousQuote}
             disabled={historyIndex <= 0}
-            className="flex-1"
+            className="w-full order-1 shadow-xs"
           >
-            <ChevronLeft className="w-4 h-4 mr-2" />
+            <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2 shrink-0" />
             Previous
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={handleMarkAsRead}
-            disabled={currentQuote.isRead || markAsReadMutation.isPending}
-            className="flex-1"
-          >
-            {markAsReadMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Mark as Read"
-            )}
           </Button>
 
           <Button
             size="lg"
             onClick={handleNextQuote}
             disabled={isLoadingQuote}
-            className="flex-1"
+            className="w-full order-2 sm:order-3 shadow-xs"
           >
-            {isLoadingQuote ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <ChevronRight className="w-4 h-4 mr-2" />
-            )}
             Next
+            {isLoadingQuote ? (
+              <Loader2 className="w-4 h-4 animate-spin ml-1 sm:ml-2 shrink-0" />
+            ) : (
+              <ChevronRight className="w-4 h-4 ml-1 sm:ml-2 shrink-0" />
+            )}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={handleMarkAsRead}
+            disabled={markAsReadMutation.isPending}
+            className="col-span-2 sm:col-span-1 order-3 sm:order-2 w-full shadow-xs font-medium"
+          >
+            {markAsReadMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+            ) : (
+              <Eye className="w-4 h-4 mr-2 shrink-0" />
+            )}
+            Mark as Read
           </Button>
         </div>
 
@@ -264,6 +271,13 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Footer Version Display */}
+        <div className="text-center pt-2">
+          <span className="text-xs font-mono text-slate-400">
+            v{APP_VERSION}
+          </span>
+        </div>
       </div>
     </div>
   );

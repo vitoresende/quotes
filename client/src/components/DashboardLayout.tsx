@@ -26,6 +26,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { Loader2 } from "lucide-react";
+import { APP_VERSION } from "@/constants/version";
 
 const menuItems = [
   { icon: Home, label: "Discover", path: "/" },
@@ -231,6 +232,13 @@ function DashboardLayoutContent({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {!isCollapsed && (
+              <div className="pt-2 text-center">
+                <span className="text-[11px] font-mono text-muted-foreground/70 tracking-tight">
+                  v{APP_VERSION}
+                </span>
+              </div>
+            )}
           </SidebarFooter>
         </Sidebar>
         <div
@@ -245,17 +253,20 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
+                  <span className="tracking-tight text-foreground font-medium">
                     {activeMenuItem?.label ?? "Menu"}
                   </span>
                 </div>
               </div>
             </div>
+            <span className="text-xs font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">
+              v{APP_VERSION}
+            </span>
           </div>
         )}
         <main className="flex-1 overflow-y-auto min-h-0">

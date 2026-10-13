@@ -6,10 +6,17 @@ import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 
+const pkg = JSON.parse(
+  fs.readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf-8")
+);
+
 const plugins = [react(), tailwindcss(), vitePluginManusRuntime()];
 
 export default defineConfig({
   plugins,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version || "1.0.0"),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

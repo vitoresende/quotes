@@ -252,22 +252,51 @@ export const appRouter = router({
         return { success: true, readCount: newReadCount };
       }),
 
-    getRandom: protectedProcedure.query(async ({ ctx }) => {
-      // This is more complex in Firestore. A simple approach is to fetch all,
-      // but this is inefficient. A better approach for large datasets would be
-      // to use a dedicated counter and fetch a random document by index, but for
-      // simplicity here, we'll fetch all and do client-side randomization.
-      // For very large sets, this should be re-architected.
-      if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const snapshot = await ctx.db.collection('quotes').where('userId', '==', ctx.user.uid).get();
-      const quotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    getRandom: protectedProcedure
+      .input(
+        z.object({
+          excludeId: z.string().optional(),
+        }).optional()
+      )
+      .query(async ({ ctx, input }) => {
+        if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+        const snapshot = await ctx.db.collection('quotes').where('userId', '==', ctx.user.uid).get();
+        const quotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
 
-      if (quotes.length === 0) {
-        return null;
-      }
-      
-      return quotes[Math.floor(Math.random() * quotes.length)];
-    }),
+        if (quotes.length === 0) {
+          return null;
+        }
+
+        // Avoid immediate repetition if there are other quotes available
+        let pool = quotes;
+        if (input?.excludeId && quotes.length > 1) {
+          const filtered = quotes.filter(q => q.id !== input.excludeId);
+          if (filtered.length > 0) {
+            pool = filtered;
+          }
+        }
+
+        // Weighted random selection based on how many times each quote has been read.
+        // Quotes with lower readCount (or unread) have significantly higher probability.
+        const weights = pool.map(quote => {
+          const count = typeof quote.readCount === 'number'
+            ? Math.max(0, quote.readCount)
+            : (quote.isRead ? 1 : 0);
+          return 1 / Math.pow(count + 1, 1.5);
+        });
+
+        const totalWeight = weights.reduce((acc, w) => acc + w, 0);
+        let randomThreshold = Math.random() * totalWeight;
+
+        for (let i = 0; i < pool.length; i++) {
+          randomThreshold -= weights[i];
+          if (randomThreshold <= 0) {
+            return pool[i];
+          }
+        }
+
+        return pool[pool.length - 1];
+      }),
   }),
 
   /**

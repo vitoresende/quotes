@@ -118,7 +118,7 @@ export default function KindleSync() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 p-4">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
           <ArrowLeft className="w-4 h-4" />
